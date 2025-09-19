@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"otel/pkg/tracing"
 	"regexp"
-	"service-b/tracing"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -57,7 +57,12 @@ func main() {
 		port = "8081"
 	}
 
-	shutdown := tracing.InitTracer("service-b")
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "otel-collector:4317"
+	}
+
+	shutdown := tracing.InitTracer("service-b", endpoint)
 	defer shutdown()
 
 	httpClient := &http.Client{

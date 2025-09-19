@@ -22,40 +22,51 @@ const (
 	FailedToCreateResource = "failed to create resource"
 )
 
-func InitTracer(serviceName string) func() {
-	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+func InitTracer(serviceName, endpoint string) func() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	if endpoint == "" {
 		endpoint = "otel-collector:4317"
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
-
+	// Criar resource com nome do serviço
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceName(serviceName),
 		),
 	)
-
 	if err != nil {
-		log.Fatalf("%s: %v", FailedToCreateResource, err)
+		log.Printf("%s: %v", FailedToCreateResource, err)
+		return func() {}
 	}
 
-	ctx, cancel = context.WithTimeout(ctx, time.Second)
-	defer cancel()
+	// Tenta conectar com retries
+	var conn *grpc.ClientConn
+	for i := 1; i <= 5; i++ {
+		cctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
 
-	conn, err := grpc.DialContext(ctx, endpoint,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
-
+		conn, err = grpc.DialContext(cctx, endpoint,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithBlock(),
+		)
+		if err == nil {
+			break
+		}
+		log.Printf("%s (tentativa %d/5): %v", ErrOTELProvider, i, err)
+		time.Sleep(2 * time.Second)
+	}
 	if err != nil {
-		log.Fatalf("%s: %v", ErrOTELProvider, err)
+		// Não derruba o serviço, apenas avisa
+		log.Printf(" Tracing desativado: %v", err)
+		return func() {}
 	}
 
 	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
 	if err != nil {
-		log.Fatalf("%s: %v", ErrOTELProvider, err)
+		log.Printf("%s: %v", ErrOTELProvider, err)
+		return func() {}
 	}
 
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
@@ -64,9 +75,11 @@ func InitTracer(serviceName string) func() {
 		sdktrace.WithResource(res),
 		sdktrace.WithSpanProcessor(bsp),
 	)
-	otel.SetTracerProvider(tp)
 
+	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	log.Printf(" OTEL tracing inicializado para %s em %s", serviceName, endpoint)
 
 	return func() {
 		_ = tp.Shutdown(context.Background())

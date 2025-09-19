@@ -1,0 +1,21 @@
+version: "3"
+
+tasks:
+  # sobe os serviços (Service A, Service B, Collector e Zipkin)
+  up:
+    desc: "Subir todos os serviços com docker-compose"
+    cmds:
+      - docker compose up -d
+
+  # derruba todos os serviços
+  down:
+    desc: "Derrubar todos os serviços"
+    cmds:
+      - docker compose down
+
+  restart:
+    desc: "Recriar containers e subir novamente"
+    cmds:
+      - docker compose down
+      - docker compose build
+      - docker compose up -d

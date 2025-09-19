@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"otel/pkg/tracing"
 	"regexp"
-	"service-a/pkg/tracing"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -24,7 +24,7 @@ var (
 	ErrMethodNotAllowed    = "method not allowed"
 	ErrInvalidBody         = "invalid body"
 	ErrMsgInvalidCep       = "invalid cep"
-	ErrServiceBUnreachable = "service-b unreachable"
+	ErrServiceAUnreachable = "service-a unreachable"
 
 	ServiceAListening = "Service A listening on "
 )
@@ -35,7 +35,17 @@ func main() {
 		port = "8080"
 	}
 
-	shutdown := tracing.InitTracer("service-a")
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "otel-collector:4317"
+	}
+
+	bURL := os.Getenv("SERVICE_B_URL")
+	if bURL == "" {
+		bURL = "http://service-b:8081/weather"
+	}
+
+	shutdown := tracing.InitTracer("service-a", endpoint)
 	defer shutdown()
 
 	client := &http.Client{
@@ -58,14 +68,10 @@ func main() {
 			return
 		}
 
-		bURL := os.Getenv("SERVICE_B_URL")
-		if bURL == "" {
-			bURL = "http://service-b:8081/weather"
-		}
 		req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, bURL+"?cep="+in.CEP, nil)
 		resp, err := client.Do(req)
 		if err != nil {
-			http.Error(w, ErrServiceBUnreachable, http.StatusBadGateway)
+			http.Error(w, ErrServiceAUnreachable, http.StatusBadGateway)
 			return
 		}
 		defer resp.Body.Close()

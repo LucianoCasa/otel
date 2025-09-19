@@ -1,15 +1,14 @@
-module service-a
+module otel
 
-go 1.23.0
-
-toolchain go1.24.0
+go 1.24.0
 
 require (
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0
+	github.com/joho/godotenv v1.5.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.38.0
 	go.opentelemetry.io/otel/sdk v1.38.0
-	google.golang.org/grpc v1.75.0
+	google.golang.org/grpc v1.75.1
 )
 
 require (

@@ -1,8 +1,8 @@
-version: "3.9"
-
 services:
   service-a:
-    build: ./service-a
+    build:
+      context: .
+      dockerfile: cmd/service-a/Dockerfile
     environment:
       - SERVICE_A_PORT=8080
       - SERVICE_B_URL=http://service-b:8081/weather
@@ -14,10 +14,12 @@ services:
       - "8080:8080"
 
   service-b:
-    build: ./service-b
+    build:
+      context: .
+      dockerfile: cmd/service-b/Dockerfile
     environment:
       - SERVICE_B_PORT=8081
-      - WEATHERAPI_KEY=5df680ab2a404916b8895424251209
+      - WEATHERAPI_KEY=5df680ab2a404916b8895424251209 
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
     depends_on:
       - otel-collector

@@ -1,24 +1,24 @@
 @baseUrl = http://localhost:8080
 
 POST {{baseUrl}}/weather
-
 Content-Type: application/json
+
 {
     "cep": "123"
 }
 ###
 
 POST {{baseUrl}}/weather
-
 Content-Type: application/json
+
 {
     "cep": "20561098"
 }
 ###
 
 POST {{baseUrl}}/weather
-
 Content-Type: application/json
+
 {
     "cep": "11111111"
 }
