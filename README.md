@@ -7,10 +7,14 @@
     docker compose up --build
 ```
 
-## Teste
+* Taskfile
 ```cmd
-    go test ./...
+    task up
 ```
+
+* Testar
+Arquivo api.http contém os testes para o teste da API.
+
 
 ## API
 
