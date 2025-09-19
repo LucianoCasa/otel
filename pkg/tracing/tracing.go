@@ -54,18 +54,17 @@ func InitTracer(serviceName, endpoint string) func() {
 		if err == nil {
 			break
 		}
-		log.Printf("%s (tentativa %d/5): %v", ErrOTELProvider, i, err)
+		// log.Printf("%s (tentativa %d/5): %v", ErrOTELProvider, i, err)
 		time.Sleep(2 * time.Second)
 	}
 	if err != nil {
-		// Não derruba o serviço, apenas avisa
 		log.Printf(" Tracing desativado: %v", err)
 		return func() {}
 	}
 
 	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
 	if err != nil {
-		log.Printf("%s: %v", ErrOTELProvider, err)
+		// log.Printf("%s: %v", ErrOTELProvider, err)
 		return func() {}
 	}
 
@@ -79,7 +78,7 @@ func InitTracer(serviceName, endpoint string) func() {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	log.Printf(" OTEL tracing inicializado para %s em %s", serviceName, endpoint)
+	// log.Printf(" OTEL tracing inicializado para %s em %s", serviceName, endpoint)
 
 	return func() {
 		_ = tp.Shutdown(context.Background())
